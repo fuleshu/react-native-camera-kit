@@ -10,7 +10,7 @@
 @import Photos;
 #import "CKCamera.h"
 #import "UIView+React.h"
-#import "RCTConvert.h"
+#import <React/RCTConvert.h>
 #import "CKCameraOverlayView.h"
 
 
