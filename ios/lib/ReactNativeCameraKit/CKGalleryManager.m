@@ -8,7 +8,7 @@
 
 #import "CKGalleryManager.h"
 #import <Photos/Photos.h>
-#import "RCTConvert.h"
+#import <React/RCTConvert.h>
 #import "CKGalleryViewManager.h"
 
 typedef void (^AlbumsBlock)(NSDictionary *albums);
