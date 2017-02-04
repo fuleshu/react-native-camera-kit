@@ -7,7 +7,7 @@
 //
 
 #import <Foundation/Foundation.h>
-#import "RCTBridgeModule.h"
+#import <React/RCTBridgeModule.h>
 
 typedef void (^CallbackGalleryBlock)(BOOL success, NSString *encodeImage);
 typedef void (^CallbackGalleryAuthorizationStatus)(BOOL isAuthorized);
