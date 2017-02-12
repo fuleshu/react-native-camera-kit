@@ -38,6 +38,11 @@ export default class CameraKitCamera extends React.Component {
 		return success;
 	}
 
+	async setImgSize(width = 1080, height = 1920) {
+		const success = await NativeCameraModule.setImgSize(width, height);
+		return success;
+	}
+
 	static async hasCameraPermission() {
 		const success = await NativeCameraModule.hasCameraPermission();
 		return success;

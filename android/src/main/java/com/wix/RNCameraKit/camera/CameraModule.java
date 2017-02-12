@@ -59,6 +59,11 @@ public class CameraModule extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
+    public void setImgSize(int width, int height, Promise promise) {
+        promise.resolve(CameraViewManager.setImgSize(width, height));
+    }
+
+    @ReactMethod
     public void capture(boolean saveToCameraRoll, final Promise promise) {
           new Capture(getReactApplicationContext(), saveToCameraRoll).execute(promise);
     }

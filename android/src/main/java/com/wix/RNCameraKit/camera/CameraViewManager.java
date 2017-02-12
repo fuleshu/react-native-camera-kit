@@ -23,6 +23,15 @@ public class CameraViewManager extends SimpleViewManager<CameraView> {
     private static String flashMode = Camera.Parameters.FLASH_MODE_AUTO;
     private static Stack<CameraView> cameraViews = new Stack<>();
     private static ThemedReactContext reactContext;
+    private static int imgWidth = 1080;
+    private static int imgHeight = 1920;
+
+    public static boolean setImgSize(int width, int height)
+    {
+        imgWidth = width;
+        imgHeight = height;
+        return true;
+    }
 
     public static Camera getCamera() {
         return camera;
@@ -187,13 +196,15 @@ public class CameraViewManager extends SimpleViewManager<CameraView> {
         if (sizes == null) return null;
         Camera.Size optimalSize = null;
         double minDiff = Double.MAX_VALUE;
-        int targetHeight = h;
+        int targetHeight = w; // assume portrait mode
+        int targetWidth = h;
         for (Camera.Size size : sizes) {
             double ratio = (double) size.width / size.height;
             if (Math.abs(ratio - targetRatio) > ASPECT_TOLERANCE) continue;
-            if (Math.abs(size.height - targetHeight) < minDiff) {
+            int sizeDiff = Math.abs(size.height - targetHeight) + Math.abs(size.width - targetWidth);
+            if (sizeDiff < minDiff) {
                 optimalSize = size;
-                minDiff = Math.abs(size.height - targetHeight);
+                minDiff = sizeDiff;
             }
         }
         if (optimalSize == null) {
@@ -214,13 +225,16 @@ public class CameraViewManager extends SimpleViewManager<CameraView> {
 
             WindowManager wm = (WindowManager) reactContext.getSystemService(Context.WINDOW_SERVICE);
             Display display = wm.getDefaultDisplay();
-            Point size = new Point();
-            display.getSize(size);
+            Point displaySize = new Point();
+            Point imgSize = new Point();
+            display.getSize(displaySize);
+            imgSize.x = imgWidth;
+            imgSize.y = imgHeight;
             if (camera == null) return;
             List<Camera.Size> supportedPreviewSizes = camera.getParameters().getSupportedPreviewSizes();
             List<Camera.Size> supportedPictureSizes = camera.getParameters().getSupportedPictureSizes();
-            Camera.Size optimalSize = getOptimalPreviewSize(supportedPreviewSizes, size.x, size.y);
-            Camera.Size optimalPictureSize = getOptimalPreviewSize(supportedPictureSizes, size.x, size.y);
+            Camera.Size optimalSize = getOptimalPreviewSize(supportedPreviewSizes, displaySize.x, displaySize.y);
+            Camera.Size optimalPictureSize = getOptimalPreviewSize(supportedPictureSizes, imgSize.x, imgSize.y);
             Camera.Parameters parameters = camera.getParameters();
             parameters.setPreviewSize(optimalSize.width, optimalSize.height);
             parameters.setPictureSize(optimalPictureSize.width, optimalPictureSize.height);
