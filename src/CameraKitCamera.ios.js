@@ -43,4 +43,13 @@ export default class CameraKitCamera extends React.Component {
     const success = await NativeCameraAction.setFlashMode(flashMode);
     return success;
   }
+
+ 	async getImageSizes() {
+		return null;
+	}
+
+	async getPreviewSizes() {
+		return null;
+	}
+
 }

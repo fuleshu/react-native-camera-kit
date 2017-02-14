@@ -51,7 +51,7 @@ public class Capture implements Command {
         CameraViewManager.getCamera().takePicture(null, null, new Camera.PictureCallback() {
             @Override
             public void onPictureTaken(byte[] data, Camera camera) {
-                camera.stopPreview();
+                CameraViewManager.stopPreview();
                 try {
                   Bitmap image = new DecodeImageTask().execute(data).get();
                   if (Capture.saveToCameraRoll)
@@ -120,6 +120,7 @@ public class Capture implements Command {
             else if (isFacingFront)
             {
                 matrix.postRotate(180);
+                matrix.postScale(-1, 1);
             }
             return matrix;
         }
@@ -219,6 +220,8 @@ public class Capture implements Command {
                 imageInfo.putString("id", filePath);
                 imageInfo.putString("name", fileName);
                 imageInfo.putInt("size", (int) fileSize);
+                imageInfo.putInt("width", image.getWidth());
+                imageInfo.putInt("height", image.getHeight());
 
                 return imageInfo;
             } catch (Exception e) {

@@ -3,11 +3,14 @@ package com.wix.RNCameraKit.camera;
 import android.Manifest;
 import android.hardware.Camera;
 import android.support.v4.content.PermissionChecker;
+import java.util.List;
 
 import com.facebook.react.bridge.Promise;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
+import com.facebook.react.bridge.WritableArray;
+import com.facebook.react.bridge.WritableNativeArray;
 import com.wix.RNCameraKit.camera.commands.Capture;
 
 public class CameraModule extends ReactContextBaseJavaModule {
@@ -59,8 +62,42 @@ public class CameraModule extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
-    public void setImgSize(int width, int height, Promise promise) {
-        promise.resolve(CameraViewManager.setImgSize(width, height));
+    public void setImageSize(int width, int height, Promise promise) {
+        promise.resolve(CameraViewManager.setImageSize(width, height));
+    }
+
+    @ReactMethod
+    public void setPreviewSize(int width, int height, Promise promise) {
+        promise.resolve(CameraViewManager.setPreviewSize(width, height));
+    }
+
+    @ReactMethod
+    public void getImageSizes(Promise promise) {
+        Camera camera = CameraViewManager.getCamera();
+        List<Camera.Size> supportedPictureSizes = camera.getParameters().getSupportedPictureSizes();
+        WritableArray array = new WritableNativeArray();
+        for (Camera.Size size : supportedPictureSizes) {
+            WritableArray sizeArray = new WritableNativeArray();
+            sizeArray.pushInt((Integer)size.width);
+            sizeArray.pushInt((Integer)size.height);
+            array.pushArray(sizeArray);
+        }
+        
+        promise.resolve(array);
+    }
+
+    @ReactMethod
+    public void getPreviewSizes(Promise promise) {
+        Camera camera = CameraViewManager.getCamera();
+        List<Camera.Size> supportedPreviewSizes = camera.getParameters().getSupportedPreviewSizes();
+        WritableArray array = new WritableNativeArray();
+        for (Camera.Size size : supportedPreviewSizes) {
+            WritableArray sizeArray = new WritableNativeArray();
+            sizeArray.pushInt((Integer)size.width);
+            sizeArray.pushInt((Integer)size.height);
+            array.pushArray(sizeArray);
+        }
+        promise.resolve(array);
     }
 
     @ReactMethod

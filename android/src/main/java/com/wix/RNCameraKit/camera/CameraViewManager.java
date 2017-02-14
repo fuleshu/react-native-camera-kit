@@ -8,6 +8,7 @@ import android.hardware.Camera;
 import android.view.Display;
 import android.view.Surface;
 import android.view.WindowManager;
+import android.util.Log;
 
 import com.facebook.react.uimanager.SimpleViewManager;
 import com.facebook.react.uimanager.ThemedReactContext;
@@ -25,11 +26,21 @@ public class CameraViewManager extends SimpleViewManager<CameraView> {
     private static ThemedReactContext reactContext;
     private static int imgWidth = 1080;
     private static int imgHeight = 1920;
+    private static int previewWidth = 1080;
+    private static int previewHeight = 1920;
+    private static boolean inPreview = false;
 
-    public static boolean setImgSize(int width, int height)
+    public static boolean setImageSize(int width, int height)
     {
         imgWidth = width;
         imgHeight = height;
+        return true;
+    }
+
+    public static boolean setPreviewSize(int width, int height)
+    {
+        previewWidth = width;
+        previewHeight = height;
         return true;
     }
 
@@ -66,8 +77,9 @@ public class CameraViewManager extends SimpleViewManager<CameraView> {
         if(parameters.getSupportedFlashModes().contains(mode)) {
             flashMode = mode;
             parameters.setFlashMode(flashMode);
+            stopPreview();
             camera.setParameters(parameters);
-            camera.startPreview();
+            startPreview();
             return true;
         } else {
             return false;
@@ -78,6 +90,7 @@ public class CameraViewManager extends SimpleViewManager<CameraView> {
         if (Camera.getNumberOfCameras() == 1) {
             return false;
         }
+        stopPreview();
         currentCamera++;
         currentCamera = currentCamera % Camera.getNumberOfCameras();
         initCamera();
@@ -92,10 +105,34 @@ public class CameraViewManager extends SimpleViewManager<CameraView> {
         }
         try {
             camera = Camera.open(currentCamera);
-            setCameraDisplayOrientation(((Activity) reactContext.getBaseContext()));
+            try {
+                setCameraDisplayOrientation(((Activity) reactContext.getBaseContext()));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
             updateCameraSize();
         } catch (RuntimeException e) {
             e.printStackTrace();
+        }
+    }
+
+    public static void startPreview()
+    {
+        if (camera == null) return;
+        if (!inPreview)
+        {
+            inPreview = true;
+            camera.startPreview();
+        }
+    }
+
+    public static void stopPreview()
+    {
+        if (camera == null) return;
+        if (inPreview)
+        {
+            inPreview = false;
+            camera.stopPreview();
         }
     }
 
@@ -117,9 +154,9 @@ public class CameraViewManager extends SimpleViewManager<CameraView> {
                     @Override
                     public void run() {
                         try {
-                            camera.stopPreview();
+                            stopPreview();
                             camera.setPreviewDisplay(cameraViews.peek().getHolder());
-                            camera.startPreview();
+                            startPreview();
                         } catch (IOException e) {
                             e.printStackTrace();
                         } catch (RuntimeException e) {
@@ -190,27 +227,33 @@ public class CameraViewManager extends SimpleViewManager<CameraView> {
         return result;
     }
 
-    private static Camera.Size getOptimalPreviewSize(List<Camera.Size> sizes, int w, int h) {
+    // the camera sizes are always the original landscape mode sizes (widht>height)
+    // the input is always portrait, so we have to change the sides to compare
+    private static Camera.Size getOptimalSize(List<Camera.Size> sizes, int portraitWidth, int portraitHeight) {
         final double ASPECT_TOLERANCE = 0.1;
-        double targetRatio=(double)h / w;
         if (sizes == null) return null;
         Camera.Size optimalSize = null;
         double minDiff = Double.MAX_VALUE;
-        int targetHeight = w; // assume portrait mode
-        int targetWidth = h;
+        int targetHeight = portraitWidth; // assume portrait mode
+        int targetWidth = portraitHeight;
+        double targetRatio=((double)targetWidth) / (double)targetHeight;
         for (Camera.Size size : sizes) {
-            double ratio = (double) size.width / size.height;
-            if (Math.abs(ratio - targetRatio) > ASPECT_TOLERANCE) continue;
-            int sizeDiff = Math.abs(size.height - targetHeight) + Math.abs(size.width - targetWidth);
-            if (sizeDiff < minDiff) {
-                optimalSize = size;
-                minDiff = sizeDiff;
+            double ratio = ((double) size.width) / (double)size.height ;
+            if (Math.abs(ratio - targetRatio) <= ASPECT_TOLERANCE)
+            {
+                int sizeDiff = Math.abs(size.height - targetHeight) + Math.abs(size.width - targetWidth);
+                if (sizeDiff < minDiff) {
+                    optimalSize = size;
+                    minDiff = sizeDiff;
+                }
             }
         }
+        // fallback if no fitting aspect ratio resolution was found
         if (optimalSize == null) {
             minDiff = Double.MAX_VALUE;
             for (Camera.Size size : sizes) {
-                if (Math.abs(size.height - targetHeight) < minDiff) {
+                int sizeDiff = Math.abs(size.height - targetHeight) + Math.abs(size.width - targetWidth);
+                if (sizeDiff < minDiff) {
                     optimalSize = size;
                     minDiff = Math.abs(size.height - targetHeight);
                 }
@@ -221,26 +264,27 @@ public class CameraViewManager extends SimpleViewManager<CameraView> {
 
     private static void updateCameraSize() {
         try {
-            Camera camera = CameraViewManager.getCamera();
-
-            WindowManager wm = (WindowManager) reactContext.getSystemService(Context.WINDOW_SERVICE);
-            Display display = wm.getDefaultDisplay();
-            Point displaySize = new Point();
-            Point imgSize = new Point();
-            display.getSize(displaySize);
-            imgSize.x = imgWidth;
-            imgSize.y = imgHeight;
             if (camera == null) return;
+
+            //WindowManager wm = (WindowManager) reactContext.getSystemService(Context.WINDOW_SERVICE);
+            //Display display = wm.getDefaultDisplay();
+            //Point displaySize = new Point();
+            //display.getSize(displaySize);
+            
             List<Camera.Size> supportedPreviewSizes = camera.getParameters().getSupportedPreviewSizes();
             List<Camera.Size> supportedPictureSizes = camera.getParameters().getSupportedPictureSizes();
-            Camera.Size optimalSize = getOptimalPreviewSize(supportedPreviewSizes, displaySize.x, displaySize.y);
-            Camera.Size optimalPictureSize = getOptimalPreviewSize(supportedPictureSizes, imgSize.x, imgSize.y);
+            Camera.Size previewSize = getOptimalSize(supportedPreviewSizes, previewWidth, previewHeight);
+            Camera.Size pictureSize = getOptimalSize(supportedPictureSizes, imgWidth, imgHeight);
+            
             Camera.Parameters parameters = camera.getParameters();
-            parameters.setPreviewSize(optimalSize.width, optimalSize.height);
-            parameters.setPictureSize(optimalPictureSize.width, optimalPictureSize.height);
-            parameters.setFlashMode(CameraViewManager.getFlashMode());
+            parameters.setPreviewSize(previewSize.width, previewSize.height);
+            parameters.setPictureSize(pictureSize.width, pictureSize.height);
+            stopPreview();
             camera.setParameters(parameters);
-        } catch (RuntimeException e) {}
+            startPreview();
+        } catch (RuntimeException e) {
+            Log.e("Error", "Error Update Camera Size");
+        }
     }
 
     public static void reconnect() {
