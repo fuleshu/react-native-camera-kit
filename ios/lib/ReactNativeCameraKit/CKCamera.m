@@ -503,6 +503,8 @@ RCT_ENUM_CONVERTER(CKCameraZoomMode, (@{
                             imageInfoDict[@"name"] = temporaryFileURL.lastPathComponent;
                         }
                         imageInfoDict[@"size"] = [NSNumber numberWithInteger:imageData.length];
+                        imageInfoDict[@"width"] = [NSNumber numberWithInteger:capturedImage.size.width];
+                        imageInfoDict[@"height"] = [NSNumber numberWithInteger:capturedImage.size.height];
                         
                         if (shouldSaveToCameraRoll) {
                             [self saveImageToCameraRoll:imageData temporaryFileURL:temporaryFileURL block:^(BOOL success) {
