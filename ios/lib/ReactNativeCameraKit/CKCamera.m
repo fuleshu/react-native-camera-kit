@@ -10,7 +10,7 @@
 @import Photos;
 #import "CKCamera.h"
 #import "UIView+React.h"
-#import <React/RCTConvert.h>
+#import <RCTConvert.h>
 #import "CKCameraOverlayView.h"
 
 
@@ -528,7 +528,7 @@ RCT_ENUM_CONVERTER(CKCameraZoomMode, (@{
                             }];
                         } else {
                             NSString *encodedString = [imageData base64Encoding];
-                            imageInfoDict[@"uri"] = [NSString stringWithFormat:@"data:image/jpg;base64,%@", encodedString];
+                            imageInfoDict[@"uri"] =  encodedString;
                             if (block) {
                                 block(imageInfoDict);
                             }
