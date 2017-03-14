@@ -492,21 +492,23 @@ RCT_ENUM_CONVERTER(CKCameraZoomMode, (@{
                 capturedImage = [UIImage imageWithCGImage:imageRef scale:capturedImage.scale orientation:UIImageOrientationUp];
                 imageData = UIImageJPEGRepresentation(capturedImage, capturedImage.scale); // TODO: check JPEG representation
                 
-                [PHPhotoLibrary requestAuthorization:^( PHAuthorizationStatus status ) {
-                    if ( status == PHAuthorizationStatusAuthorized ) {
+                NSMutableDictionary *imageInfoDict = [[NSMutableDictionary alloc] init];
+                imageInfoDict[@"size"] = [NSNumber numberWithInteger:imageData.length];
+                imageInfoDict[@"width"] = [NSNumber numberWithInteger:capturedImage.size.width];
+                imageInfoDict[@"height"] = [NSNumber numberWithInteger:capturedImage.size.height];
                         
-                        NSMutableDictionary *imageInfoDict = [[NSMutableDictionary alloc] init];
-                        
-                        NSURL *temporaryFileURL = [self saveToTmpFolder:imageData];
-                        if (temporaryFileURL) {
-                            imageInfoDict[@"uri"] = temporaryFileURL.description;
-                            imageInfoDict[@"name"] = temporaryFileURL.lastPathComponent;
-                        }
-                        imageInfoDict[@"size"] = [NSNumber numberWithInteger:imageData.length];
-                        imageInfoDict[@"width"] = [NSNumber numberWithInteger:capturedImage.size.width];
-                        imageInfoDict[@"height"] = [NSNumber numberWithInteger:capturedImage.size.height];
-                        
-                        if (shouldSaveToCameraRoll) {
+                if (shouldSaveToCameraRoll) {
+                            
+                    [PHPhotoLibrary requestAuthorization:^( PHAuthorizationStatus status ) {
+                        if ( status == PHAuthorizationStatusAuthorized ) {
+                            
+                            
+                            NSURL *temporaryFileURL = [self saveToTmpFolder:imageData];
+                            if (temporaryFileURL) {
+                                imageInfoDict[@"uri"] = temporaryFileURL.description;
+                                imageInfoDict[@"name"] = temporaryFileURL.lastPathComponent;
+                            }
+                            
                             [self saveImageToCameraRoll:imageData temporaryFileURL:temporaryFileURL block:^(BOOL success) {
                                 if (success) {
                                     
@@ -528,18 +530,16 @@ RCT_ENUM_CONVERTER(CKCameraZoomMode, (@{
                                     //NSLog( @"Could not save to camera roll");
                                 }
                             }];
-                        } else {
-                            NSString *encodedString = [imageData base64Encoding];
-                            imageInfoDict[@"uri"] =  encodedString;
-                            if (block) {
-                                block(imageInfoDict);
-                            }
                         }
-                        
-                        
-                        
+                    }];
+                    
+                } else {
+                    NSString *encodedString = [imageData base64Encoding];
+                    imageInfoDict[@"uri"] =  encodedString;
+                    if (block) {
+                        block(imageInfoDict);
                     }
-                }];
+                }
             }
             else {
                 //NSLog( @"Could not capture still image: %@", error );
